@@ -1,0 +1,30 @@
+{
+  "name": "embark-snark",
+  "version": "1.0.0",
+  "description": "Snark plugin for Embark",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "snark",
+    "circom",
+    "ethereum",
+    "embark"
+  ],
+  "author": "Anthony Laibe",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/embark-framework/embark-snark/issues"
+  },
+  "homepage": "https://github.com/embark-framework/embark-snark#readme",
+  "devDependencies": {
+    "eslint": "^4.19.1"
+  },
+  "dependencies": {
+    "circom": "^0.0.19",
+    "fs-extra": "^7.0.1",
+    "globule": "^1.2.1",
+    "snarkjs": "^0.1.6"
+  }
+}
