@@ -1,30 +1,97 @@
 {
   "name": "embark-snark",
-  "version": "1.0.0",
+  "version": "0.1.0",
+  "author": "Anthony Laibe",
   "description": "Snark plugin for Embark",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "homepage": "https://github.com/embark-framework/embark-snark#readme",
+  "bugs": "https://github.com/embark-framework/embark-snark/issues",
   "keywords": [
     "snark",
     "circom",
     "ethereum",
     "embark"
   ],
-  "author": "Anthony Laibe",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/embark-framework/embark-snark/issues"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/embark-framework/embark-snark.git"
   },
-  "homepage": "https://github.com/embark-framework/embark-snark#readme",
-  "devDependencies": {
-    "eslint": "^4.19.1"
+  "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "cross-env BABEL_ENV=node babel src --extensions \".js\" --out-dir dist --source-maps",
+    "clean": "npx rimraf coverage dist package embark-snark-*.tgz",
+    "lint": "eslint babel.config.js src/ test/",
+    "lint:fix": "npm run lint -- --fix",
+    "prepublishOnly": "npm-run-all clean lint test build",
+    "test": "jest",
+    "watch": "npm run build -- --verbose --watch"
   },
   "dependencies": {
-    "circom": "^0.0.19",
-    "fs-extra": "^7.0.1",
-    "globule": "^1.2.1",
-    "snarkjs": "^0.1.6"
+    "@babel/runtime-corejs2": "7.5.5",
+    "circom": "0.0.31",
+    "find-up": "4.1.0",
+    "fs-extra": "8.1.0",
+    "glob": "7.1.4",
+    "semver": "6.3.0",
+    "snarkjs": "0.1.17"
+  },
+  "devDependencies": {
+    "@babel/cli": "7.5.5",
+    "@babel/core": "7.5.5",
+    "@babel/plugin-transform-runtime": "7.5.5",
+    "@babel/preset-env": "7.5.5",
+    "babel-eslint": "10.0.3",
+    "babel-jest": "24.9.0",
+    "cross-env": "5.2.0",
+    "eslint": "6.2.2",
+    "eslint-config-prettier": "6.1.0",
+    "eslint-plugin-jest": "22.5.1",
+    "eslint-plugin-prettier": "3.1.0",
+    "husky": "3.0.4",
+    "jest": "24.9.0",
+    "lint-staged": "9.2.5",
+    "lodash.clonedeep": "4.5.0",
+    "npm-run-all": "4.1.5",
+    "prettier": "1.18.2",
+    "rimraf": "3.0.0"
+  },
+  "eslintConfig": {
+    "env": {
+      "es6": true,
+      "node": true
+    },
+    "extends": [
+      "eslint:recommended",
+      "plugin:jest/recommended",
+      "plugin:jest/style",
+      "plugin:prettier/recommended"
+    ],
+    "parser": "babel-eslint"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "jest": {
+    "collectCoverage": true,
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/test/**/*.js"
+    ]
+  },
+  "lint-staged": {
+    "{src,test}/**/*.js": ["eslint --fix", "git add"]
+  },
+  "prettier": {
+    "singleQuote": true
+  },
+  "engines": {
+    "node": ">=8.12.0 <12.0.0",
+    "npm": ">=6.4.1",
+    "yarn": ">=1.12.3"
   }
 }
