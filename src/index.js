@@ -28,6 +28,7 @@ class Snarks {
     this.embark = embark;
     this.circuitsConfig = embark.pluginConfig;
     this.compiledCircuitsPath = embark.config.dappPath('.embark', 'snarks');
+    this.isEmbark5 = semver(this.embark.version).major >= 5;
     this.registerEvents();
   }
 
@@ -35,7 +36,7 @@ class Snarks {
     this.embark.registerActionForEvent(
       // won't work as desired with "dev embark" (built in monorepo) until
       // after first prerelease of embark v5
-      semver(this.embark.version).major >= 5 // || true // get rid of `|| true`
+      this.isEmbark5 // || true // get rid of `|| true`
         ? 'contracts:build:before'
         : 'build:beforeAll',
       (_, callback) => this.compileAndGenerateContracts(callback)
@@ -128,15 +129,15 @@ class Snarks {
       setup.vk_proof,
       witness
     );
-    if (zkSnark.original.isValid(setup.vk_verifier, proof, publicSignals)) {
-      return this.generateVerifier(basename);
+    if (!zkSnark.original.isValid(setup.vk_verifier, proof, publicSignals)) {
+      throw new Error(
+        `The proof is not valid for ${basename} with inputs: ${JSON.stringify(
+          input
+        )}`
+      );
     }
 
-    throw new Error(
-      `The proof is not valid for ${basename} with inputs: ${JSON.stringify(
-        input
-      )}`
-    );
+    return this.generateVerifier(basename);
   }
 
   async getCircuit(filepath) {
@@ -188,8 +189,7 @@ class Snarks {
   addVerifierToContracts(filename) {
     // won't work as desired with "dev embark" (built in monorepo) until after
     // first prerelease of embark v5
-    if (semver(this.embark.version).major >= 5 /* || true */) {
-      // get rid of `|| true`
+    if (this.isEmbark5 /* || true */ /* get rid of `|| true` */) {
       this.embark.addContractFile(
         path.join(this.compiledCircuitsPath, filename)
       );
