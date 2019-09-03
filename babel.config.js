@@ -5,6 +5,7 @@ module.exports = api => {
 
   const base = {
     plugins: [
+      '@babel/plugin-proposal-class-properties',
       [
         '@babel/plugin-transform-runtime',
         {

@@ -12,8 +12,6 @@ const glob = promisify(globCb);
 zkSnark.bigInt.prototype.toJSON = function() {
   return this.toString();
 };
-const circomBinary = findUp('node_modules/.bin/circom', { cwd: __dirname });
-const snarkjsBinary = findUp('node_modules/.bin/snarkjs', { cwd: __dirname });
 
 const Extension = {
   Json: '.json',
@@ -28,18 +26,29 @@ class Snarks {
     this.embark = embark;
     this.circuitsConfig = embark.pluginConfig;
     this.compiledCircuitsPath = embark.config.dappPath('.embark', 'snarks');
+    // v5 detection won't work as desired with "dev embark" (built in monorepo)
+    // until after first prerelease of embark v5; can assign `true` to test
+    // this.isEmbark5 = true;
     this.isEmbark5 = semver(this.embark.version).major >= 5;
     this.registerEvents();
   }
 
+  static circomBinary = findUp('node_modules/.bin/circom', { cwd: __dirname });
+  static snarkjsBinary = findUp('node_modules/.bin/snarkjs', {
+    cwd: __dirname
+  });
+
   registerEvents() {
-    this.embark.registerActionForEvent(
-      // won't work as desired with "dev embark" (built in monorepo) until
-      // after first prerelease of embark v5
-      this.isEmbark5 // || true // get rid of `|| true`
-        ? 'contracts:build:before'
-        : 'build:beforeAll',
-      (_, callback) => this.compileAndGenerateContracts(callback)
+    if (this.isEmbark5) {
+      return this.embark.registerActionForEvent(
+        'compiler:contracts:compile:before',
+        (contractFiles, callback) => {
+          this.compileAndGenerateContracts(contractFiles, callback);
+        }
+      );
+    }
+    this.embark.registerActionForEvent('build:beforeAll', callback =>
+      this.compileAndGenerateContracts([], callback)
     );
   }
 
@@ -92,7 +101,7 @@ class Snarks {
         this.compiledCircuitsPath,
         `${path.basename(filepath, Extension.Circom)}${Extension.Json}`
       );
-      exec(`${circomBinary} ${filepath} -o ${output}`, error => {
+      exec(`${Snarks.circomBinary} ${filepath} -o ${output}`, error => {
         if (error) {
           return reject(error);
         }
@@ -168,7 +177,7 @@ class Snarks {
       const source = this.verifierFilepath(basename);
       const output = this.verifierContractPath(basename);
       exec(
-        `${snarkjsBinary} generateverifier --vk ${source} -v ${output}`,
+        `${Snarks.snarkjsBinary} generateverifier --vk ${source} -v ${output}`,
         error => {
           if (error) {
             return reject(error);
@@ -180,36 +189,31 @@ class Snarks {
     });
   }
 
-  async addVerifiersToContracts() {
+  async addVerifiersToContracts(contractFiles) {
     (await fs.readdir(this.compiledCircuitsPath))
       .filter(filename => path.extname(filename) === Extension.Solidity)
-      .map(filename => this.addVerifierToContracts(filename));
+      .map(filename => this.addVerifierToContracts(filename, contractFiles));
   }
 
-  addVerifierToContracts(filename) {
-    // won't work as desired with "dev embark" (built in monorepo) until after
-    // first prerelease of embark v5
-    if (this.isEmbark5 /* || true */ /* get rid of `|| true` */) {
-      this.embark.addContractFile(
-        path.join(this.compiledCircuitsPath, filename)
-      );
-      // this.embark.logger.warn(require('util').inspect(this.embark.contractsFiles));
-    } else {
-      this.embark.events.request(
-        'config:contractsFiles:add',
-        path.join(this.compiledCircuitsPath, filename)
-      );
+  addVerifierToContracts(filename, contractFiles) {
+    filename = path.join(this.compiledCircuitsPath, filename);
+    if (this.isEmbark5) {
+      return contractFiles.push({ path: filename });
     }
+    this.embark.events.request('config:contractsFiles:add', filename);
   }
 
-  async compileAndGenerateContracts(callback) {
+  async compileAndGenerateContracts(contractFiles, callback) {
     try {
       await this.compileCircuits();
       await this.generateProofs();
-      await this.addVerifiersToContracts();
+      await this.addVerifiersToContracts(contractFiles);
     } catch (error) {
       this.embark.logger.error(error.message || error);
-    } finally {
+    }
+    if (this.isEmbark5) {
+      callback(null, contractFiles);
+    } else {
       callback();
     }
   }
